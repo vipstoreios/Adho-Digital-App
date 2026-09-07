@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin:0; background:#f4fbf6; color:#123524; font-family: Arial, sans-serif; }
+.glass { background:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.8); box-shadow:0 12px 40px rgba(22,163,74,.1); backdrop-filter:blur(18px); }
