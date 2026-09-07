@@ -7,12 +7,13 @@ A new Next.js + TypeScript management console for the Mini Group grocery platfor
 1. Install Node.js 20+ and pnpm.
 2. Copy `.env.example` to `.env.local`.
 3. Add the Supabase project URL and browser-safe anon key.
-4. Ensure the Mini Group Supabase migrations are deployed, including admin roles, RLS/RPC functions, and the `product-images` bucket.
-5. Run `pnpm install` and `pnpm dev`.
+4. Add `ADMIN_EMAIL` with the Supabase Auth admin email. It is server-only and is never exposed to the browser.
+5. Ensure the Mini Group Supabase migrations are deployed, including admin roles, RLS/RPC functions, and the `product-images` bucket.
+6. Run `pnpm install` and `pnpm dev`.
 
 ## First admin
 
-Create the first user in Supabase Auth, then insert that user's UUID into `admin_roles`. Follow [docs/FIRST_ADMIN.md](docs/FIRST_ADMIN.md). Passwords are managed only by Supabase Auth and are never stored in this repository or frontend code.
+Create the first user in Supabase Auth, set its email as `ADMIN_EMAIL`, then insert that user's UUID into `admin_roles`. The login screen asks only for the password; the server combines it with `ADMIN_EMAIL` for Supabase Auth. Follow [docs/FIRST_ADMIN.md](docs/FIRST_ADMIN.md). Passwords are managed only by Supabase Auth and are never stored in this repository or frontend code.
 
 ## Included management areas
 

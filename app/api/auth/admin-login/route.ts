@@ -1,0 +1,4 @@
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+export async function POST(request:Request){const adminEmail=process.env.ADMIN_EMAIL;if(!adminEmail)return NextResponse.json({error:'Admin login is not configured.'},{status:500});const body=await request.json().catch(()=>null);if(!body?.password||typeof body.password!=='string')return NextResponse.json({error:'Password is required.'},{status:400});const store=await cookies();const supabase=createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{cookies:{getAll:()=>store.getAll(),setAll:values=>values.forEach(({name,value,options})=>store.set(name,value,options))}});const{error}=await supabase.auth.signInWithPassword({email:adminEmail,password:body.password});if(error)return NextResponse.json({error:'Invalid admin password.'},{status:401});return NextResponse.json({ok:true})}
