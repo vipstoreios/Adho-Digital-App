@@ -1,12 +1,13 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { supabasePublishableKey, supabaseUrl } from './lib/supabase/env';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabasePublishableKey(),
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
@@ -21,16 +22,13 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  if (claimsError || !claimsData?.claims?.sub) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const { data: isAdmin, error } = await supabase.rpc('is_mini_admin');
-  if (error || !isAdmin) {
+  const { data: isAdmin, error: roleError } = await supabase.rpc('is_mini_admin');
+  if (roleError || !isAdmin) {
     await supabase.auth.signOut();
     return NextResponse.redirect(new URL('/login?error=unauthorized', request.url));
   }
