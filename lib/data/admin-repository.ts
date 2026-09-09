@@ -26,6 +26,9 @@ function resolveTable(section: AdminSection): TableName {
   }
 }
 
+const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const maxImageBytes = 5 * 1024 * 1024;
+
 export const adminRepository = {
   async list(section: AdminSection) {
     if (section === 'settings') return [];
@@ -99,17 +102,30 @@ export const adminRepository = {
   },
 
   async upload(file: File) {
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Only image files can be uploaded.');
+    if (!allowedImageTypes.has(file.type)) {
+      throw new Error('Upload a JPEG, PNG, or WebP image.');
+    }
+    if (file.size > maxImageBytes) {
+      throw new Error('Image size must be 5 MB or less.');
+    }
+
+    const supabase = browserSupabase();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('Your admin session has expired. Please sign in again.');
     }
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-    const path = `${crypto.randomUUID()}-${safeName}`;
-    const supabase = browserSupabase();
+    const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
     const { error } = await supabase.storage
       .from('product-images')
       .upload(path, file, { contentType: file.type, upsert: false });
     if (error) throw error;
+
     return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
   },
 
