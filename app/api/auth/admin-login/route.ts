@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { supabasePublishableKey, supabaseUrl } from '../../../../lib/supabase/env';
 
 export async function POST(request: Request) {
   const adminEmail = process.env.ADMIN_EMAIL;
@@ -23,8 +24,8 @@ export async function POST(request: Request) {
 
   const store = await cookies();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabasePublishableKey(),
     {
       cookies: {
         getAll: () => store.getAll(),
