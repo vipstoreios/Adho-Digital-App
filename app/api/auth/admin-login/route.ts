@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     {
       cookies: {
         getAll: () => store.getAll(),
-        setAll: (values) => {
+        setAll: (values: { name: string; value: string; options?: any }[]) => {
           values.forEach(({ name, value, options }) =>
             store.set(name, value, options),
           );
