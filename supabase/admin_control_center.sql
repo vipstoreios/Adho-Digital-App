@@ -38,6 +38,21 @@ create table if not exists public.admin_audit_log (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.featured_products (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null unique references public.products(id) on delete cascade,
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.app_settings (
+  id text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
 alter table public.stores add column if not exists cover_image text;
 alter table public.stores add column if not exists delivery_available boolean not null default true;
 alter table public.stores add column if not exists pickup_available boolean not null default true;
