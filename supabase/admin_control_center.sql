@@ -68,6 +68,16 @@ alter table public.banners add column if not exists action_type text not null de
 alter table public.banners add column if not exists action_value text;
 alter table public.banners add column if not exists starts_at timestamptz;
 alter table public.banners add column if not exists ends_at timestamptz;
+-- Canonical mobile-app banner fields. The older description/cta/action fields
+-- remain for backwards compatibility but new writes use these columns.
+alter table public.banners add column if not exists subtitle_ku text not null default '';
+alter table public.banners add column if not exists subtitle_ar text not null default '';
+alter table public.banners add column if not exists subtitle_en text not null default '';
+alter table public.banners add column if not exists cta_label_ku text not null default '';
+alter table public.banners add column if not exists cta_label_ar text not null default '';
+alter table public.banners add column if not exists cta_label_en text not null default '';
+alter table public.banners add column if not exists action_url text;
+alter table public.banners add column if not exists target_store_id uuid references public.stores(id) on delete set null;
 
 create index if not exists user_roles_user_idx on public.user_roles(user_id);
 create index if not exists app_content_section_idx on public.app_content(section,is_active);
@@ -184,6 +194,16 @@ drop policy if exists admin_update_marketplace_images on storage.objects;
 create policy admin_update_marketplace_images on storage.objects for update to authenticated using(bucket_id='product-images' and public.is_mini_admin()) with check(bucket_id='product-images' and public.is_mini_admin());
 drop policy if exists admin_delete_marketplace_images on storage.objects;
 create policy admin_delete_marketplace_images on storage.objects for delete to authenticated using(bucket_id='product-images' and public.is_mini_admin());
+
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values('banners','banners',true,8388608,array['image/jpeg','image/png','image/webp'])
+on conflict(id) do update set public=true,file_size_limit=8388608,allowed_mime_types=excluded.allowed_mime_types;
+drop policy if exists admin_upload_banner_images on storage.objects;
+create policy admin_upload_banner_images on storage.objects for insert to authenticated with check(bucket_id='banners' and public.is_mini_admin());
+drop policy if exists admin_update_banner_images on storage.objects;
+create policy admin_update_banner_images on storage.objects for update to authenticated using(bucket_id='banners' and public.is_mini_admin()) with check(bucket_id='banners' and public.is_mini_admin());
+drop policy if exists admin_delete_banner_images on storage.objects;
+create policy admin_delete_banner_images on storage.objects for delete to authenticated using(bucket_id='banners' and public.is_mini_admin());
 
 -- Realtime role refresh for Flutter clients. Ignore if already published.
 do $$ begin

@@ -19,8 +19,11 @@ export const adminRepository={
   },
   async save(section:AdminSection,values:Record<string,unknown>,id?:string){
     const query=id?browserSupabase().from(table(section)).update(values).eq(primaryKey(section),id):browserSupabase().from(table(section)).insert(values);
-    const {error}=await query;if(error)throw error;
-    await this.audit(id?'update':'create',section,id,values);
+    const {data,error}=await query.select(primaryKey(section)).maybeSingle();
+    if(error)throw new Error(`Save failed: ${error.message}`);
+    if(!data)throw new Error('Save failed because the record was not accepted. Check your admin permissions and try again.');
+    const savedId=String((data as Record<string,unknown>)[primaryKey(section)]??id??'');
+    await this.audit(id?'update':'create',section,savedId,values);
   },
   async remove(section:AdminSection,id:string){
     if(section==='customers'){const {error}=await browserSupabase().rpc('admin_delete_user',{p_user_id:id});if(error)throw error}
@@ -37,9 +40,12 @@ export const adminRepository={
   async upload(file:File,folder='admin'){
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024)throw new Error('Use a JPG, PNG or WebP image smaller than 8 MB.');
     const s=browserSupabase();const {data:{user}}=await s.auth.getUser();if(!user)throw new Error('Admin login required.');
-    const ext=file.name.split('.').pop()?.toLowerCase()||'jpg';const path=`${folder}/${user.id}/${crypto.randomUUID()}.${ext}`;
-    const {error}=await s.storage.from('product-images').upload(path,file,{contentType:file.type});if(error)throw error;
-    return s.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+    const ext=file.name.split('.').pop()?.toLowerCase()||'jpg';
+    const bucket=folder==='banners'?'banners':folder==='stores'?'store-images':'product-images';
+    const path=`${user.id}/${folder}/${crypto.randomUUID()}.${ext}`;
+    const {error}=await s.storage.from(bucket).upload(path,file,{contentType:file.type,upsert:false});
+    if(error)throw new Error(`Image upload failed: ${error.message}`);
+    return s.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   },
   async overview(){const {data,error}=await browserSupabase().rpc('admin_overview');if(error)throw error;return (data??{}) as Record<string,number>},
   async recentOrders(){const {data,error}=await browserSupabase().from('orders').select('id,status,total_price,created_at,user_id,store_id').order('created_at',{ascending:false}).limit(8);if(error)throw error;return data??[]},
